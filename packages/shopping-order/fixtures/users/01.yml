@@ -1,0 +1,6 @@
+email: support@example.com
+firstName: Support
+password: support12345678
+role: support
+permissions: ['AdministratorAccess', 'CustomerAccess', 'SupportAccess']
+resetKey: ''

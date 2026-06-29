@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  # Database: MongoDB
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_shopping
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - shopping_network
+
+  # Database: Redis
+  redis:
+    image: redis:latest
+    container_name: redis_shopping
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - shopping_network
+
+  # Product Service (Port 3001)
+  product-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.monorepo
+    container_name: product_service
+    ports:
+      - "3001:3001"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3001
+      - MONGODB_URL=mongodb://mongodb:27017/shopping
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ALLOWED_ORIGINS=http://localhost,http://localhost:8080,http://localhost:5173
+    command: npm run start:shopping-product
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - shopping_network
+
+  # Order Service (Port 3002)
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.monorepo
+    container_name: order_service
+    ports:
+      - "3002:3002"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3002
+      - MONGODB_URL=mongodb://mongodb:27017/shopping
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PRODUCT_SERVICE_URL=http://product-service:3001
+      - AUTH_SERVICE_URL=http://auth-service:3003
+      - ALLOWED_ORIGINS=http://localhost,http://localhost:8080,http://localhost:5173
+    command: npm run start:shopping-order
+    depends_on:
+      - mongodb
+      - redis
+      - product-service
+      - auth-service
+    networks:
+      - shopping_network
+
+  # Auth Service (Port 3003)
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.monorepo
+    container_name: auth_service
+    ports:
+      - "3003:3003"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3003
+      - MONGODB_URL=mongodb://mongodb:27017/shopping
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ALLOWED_ORIGINS=http://localhost,http://localhost:8080,http://localhost:5173
+    command: npm run start:shopping-auth
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - shopping_network
+
+  # Frontend Service (Nginx serving React static assets)
+  frontend:
+    build:
+      context: ./packages/shopping-frontend
+      dockerfile: Dockerfile
+    container_name: frontend_service
+    ports:
+      - "8080:80"
+    depends_on:
+      - product-service
+      - order-service
+      - auth-service
+    networks:
+      - shopping_network
+
+volumes:
+  mongo_data:
+  redis_data:
+
+networks:
+  shopping_network:
+    driver: bridge

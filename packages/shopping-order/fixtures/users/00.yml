@@ -1,0 +1,6 @@
+email: admin@example.com
+firstName: Administrator
+password: admin12345678
+role: admin
+permissions: ['SuperAdminAccess', 'AdministratorAccess', 'CustomerAccess']
+resetKey: ''
