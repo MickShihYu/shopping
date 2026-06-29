@@ -28,6 +28,9 @@ This starts all services in background containers, simulating the production mic
 
 ```bash
 docker compose up --build -d
+
+docker compose build
+docker compose up
 ```
 
 Once started, the services are available at:

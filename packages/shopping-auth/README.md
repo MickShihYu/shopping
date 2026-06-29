@@ -1,4 +1,4 @@
-# Shopping Backend Service (`packages/shopping`)
+# Shopping Auth Backend Service (`packages/shopping-auth`)
 
 This is the core REST API backend for the shopping application, built using the [LoopBack 4](https://loopback.io/) Node.js framework. It is responsible for user accounts, product management, shopping carts, and order checkout flows.
 
@@ -32,7 +32,7 @@ src/
 
 1. Change into this package directory:
    ```bash
-   cd packages/shopping
+   cd packages/shopping-auth
    ```
 2. Build the project code:
    ```bash
@@ -42,7 +42,7 @@ src/
    ```bash
    npm start
    ```
-   _The server starts on `http://localhost:3000`._
+   _The server starts on `http://localhost:3003`._
 
 ---
 
@@ -53,8 +53,8 @@ Configure these environment variables in your environment or via a local `.env` 
 | Environment Variable                 | Default Value                                 | Purpose                                                     |
 | ------------------------------------ | --------------------------------------------- | ----------------------------------------------------------- |
 | `HOST`                               | `127.0.0.1`                                   | The host the LoopBack server binds to.                      |
-| `PORT`                               | `3000`                                        | The port the LoopBack server binds to.                      |
-| `MONGODB_URL`                        | `mongodb://127.0.0.1:27017/shopping`          | MongoDB datasource URL connection string.                   |
+| `PORT`                               | `3003`                                        | The port the LoopBack server binds to.                      |
+| `MONGODB_URL`                        | `mongodb://127.0.0.1:27017/shopping-auth`          | MongoDB datasource URL connection string.                   |
 | `REDIS_HOST`                         | `127.0.0.1`                                   | Redis cart database host.                                   |
 | `REDIS_PORT`                         | `6379`                                        | Redis cart database port.                                   |
 
@@ -88,28 +88,17 @@ The following test users are preloaded into the MongoDB database upon boot (usin
 ## 5. API Documentation Location
 
 - **Interactive API Explorer (Swagger)**:
-  - Access Path: `http://localhost:3000/explorer`
+  - Access Path: `http://localhost:3003/explorer`
   - This provides a GUI to experiment with all endpoints, including authentication (`/users/login`) and cart CRUD actions.
 - **OpenAPI Schema Document**:
-  - Access Path: `http://localhost:3000/openapi.json`
+  - Access Path: `http://localhost:3003/openapi.json`
 
 ---
 
-## 6. Completed & Pending Items
-
-### Completed Items
-
-- [x] Implemented core model entities (User, Product, Order, Shopping Cart).
-- [x] Integrated MongoDB connector for persistent storage (users & orders).
-- [x] Integrated Redis connector for volatile shopping cart records.
-- [x] Secured routes using custom JWT Authentication and basic role authorization voters.
-- [x] Configured dynamic CORS mapping matching multiple web client origins.
+## 6. Pending Items
 
 ### Pending Items (Backlog)
-
-- [ ] Add rate limiting middleware to prevent brute force requests.
 - [ ] Transition mock checkout flow to secure Stripe payment gateway interfaces.
-- [ ] Write integration test cases covering end-to-end user checkout.
 
 ---
 
