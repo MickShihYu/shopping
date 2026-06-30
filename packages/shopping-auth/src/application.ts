@@ -3,34 +3,34 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import {AuthenticationComponent, Strategies} from 'loopback4-authentication';
+import { AuthenticationComponent, Strategies } from 'loopback4-authentication';
 import {
   AuthorizationComponent,
   AuthorizationBindings,
 } from 'loopback4-authorization';
-import {TokenServiceBindings} from '@loopback/authentication-jwt';
-import {AuthorizationTags} from '@loopback/authorization';
-import {BootMixin} from '@loopback/boot';
+import { TokenServiceBindings } from '@loopback/authentication-jwt';
+import { AuthorizationTags } from '@loopback/authorization';
+import { BootMixin } from '@loopback/boot';
 import {
   ApplicationConfig,
   BindingKey,
   createBindingFromClass,
 } from '@loopback/core';
-import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
-import {RestApplication} from '@loopback/rest';
+import { RepositoryMixin, SchemaMigrationOptions } from '@loopback/repository';
+import { RestApplication } from '@loopback/rest';
 import {
   RestExplorerBindings,
   RestExplorerComponent,
 } from '@loopback/rest-explorer';
-import {ServiceMixin} from '@loopback/service-proxy';
+import { ServiceMixin } from '@loopback/service-proxy';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import {PasswordHasherBindings, UserServiceBindings} from './keys';
-import {UserWithPassword, Role} from './models';
-import {UserRepository, RoleRepository} from './repositories';
-import {PermissionKey} from './permission-keys';
-import {ShoppySequence} from './sequence';
+import { PasswordHasherBindings, UserServiceBindings } from './keys';
+import { UserWithPassword, Role } from './models';
+import { UserRepository, RoleRepository } from './repositories';
+import { PermissionKey } from './permission-keys';
+import { ShoppySequence } from './sequence';
 import {
   UserManagementService,
   BcryptHasher,
@@ -38,9 +38,9 @@ import {
   JWTService,
 } from './services';
 import YAML = require('yaml');
-import {ErrorHandlerMiddlewareProvider} from './middlewares';
-import {BearerTokenVerifyProvider} from './providers/bearer-token-verify.provider';
-import {MyAuthorizationProvider} from './providers/authorization.provider';
+import { ErrorHandlerMiddlewareProvider } from './middlewares';
+import { BearerTokenVerifyProvider } from './providers/bearer-token-verify.provider';
+import { MyAuthorizationProvider } from './providers/authorization.provider';
 
 /**
  * Information from package.json
@@ -82,9 +82,7 @@ export class ShoppingApplication extends BootMixin(
     this.bind('jwt.private.key').to(privateKey);
     this.bind('jwt.public.key').to(publicKey);
     this.bind('jwt.issuer').to(process.env.JWT_ISSUER || 'shopping-service');
-    this.bind(TokenServiceBindings.TOKEN_EXPIRES_IN).to(
-      process.env.JWT_EXPIRES_IN || '86400',
-    );
+    this.bind(TokenServiceBindings.TOKEN_EXPIRES_IN).to(process.env.JWT_EXPIRES_IN || '86400');
     this.bind(TokenServiceBindings.TOKEN_SERVICE).toClass(JWTService);
     this.bind(PasswordHasherBindings.PASSWORD_HASHER).toClass(BcryptHasher);
     this.bind(PasswordHasherBindings.ROUNDS).to(10);
@@ -202,7 +200,7 @@ export class ShoppingApplication extends BootMixin(
         const yamlString = YAML.parse(fs.readFileSync(userFile, 'utf8'));
 
         const existingUsers = await userRepo.findOne({
-          where: {email: yamlString.email},
+          where: { email: yamlString.email },
         });
         if (!existingUsers) {
           yamlString.roleId = roleMap[yamlString.role] ?? yamlString.role;

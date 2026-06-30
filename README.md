@@ -71,7 +71,7 @@ The following core environment variables can be customized in your environment c
 ### Database & Cache
 | Variable Name | Default Value | Description |
 | --- | --- | --- |
-| `MONGODB_URL` | `mongodb://127.0.0.1:27017/shopping` | Base MongoDB connection URL. Each service uses a specific DB by default. |
+| `MONGODB_URL` | `mongodb://127.0.0.1:27017/shopping-auth`<br>`mongodb://127.0.0.1:27017/shopping-order`<br>`mongodb://127.0.0.1:27017/shopping-product` | Base MongoDB connection URL. Each service uses a specific DB by default. |
 | `TEST_MONGODB_URL` | `mongodb://127.0.0.1:27017/..._test` | MongoDB connection URL used for testing. |
 | `REDIS_HOST` | `127.0.0.1` | Host address of the Redis server. |
 | `REDIS_PORT` | `6379` | Port number of the Redis server. |
