@@ -7,6 +7,7 @@ import { inject } from '@loopback/core';
 import { DefaultCrudRepository } from '@loopback/repository';
 import { MongoDataSource } from '../datasources';
 import { Product, ProductRelations } from '../models';
+import { ObjectId } from 'mongodb';
 
 export class ProductRepository extends DefaultCrudRepository<
   Product,
@@ -21,21 +22,21 @@ export class ProductRepository extends DefaultCrudRepository<
     const productCollection = (this.dataSource.connector as any).collection('Product');
     const result = await productCollection.findOneAndUpdate(
       {
-        productId,
+        _id: new ObjectId(productId),
         isActive: true,
         inventory: { $gte: quantity },
       },
       {
         $inc: { inventory: -quantity },
       },
-      { returnDocument: 'after' }, // Return updated document
+      { returnDocument: 'after' }
     );
 
-    if (!result) {
+    if (!result.value || !result.lastErrorObject?.updatedExisting) {
       return false;
     }
 
-    if (result.inventory <= (result.lowStockThreshold ?? 5)) {
+    if (result.value.inventory <= (result.value.lowStockThreshold ?? 5)) {
       console.warn(
         `[WARNING] Low stock alert: Product ${result.name} (ID: ${productId}) has only ${result.inventory} items left.`,
       );
@@ -48,12 +49,12 @@ export class ProductRepository extends DefaultCrudRepository<
     const productCollection = (this.dataSource.connector as any).collection('Product');
 
     const result = await productCollection.findOneAndUpdate(
-      { productId },
+      { _id: new ObjectId(productId) },
       { $inc: { inventory: quantity } },
       { returnDocument: 'after' },
     );
 
-    if (!result) {
+    if (!result.value || !result.lastErrorObject?.updatedExisting) {
       console.error(
         `[ERROR] Failed to increase stock — product ${productId} not found.`,
       );
