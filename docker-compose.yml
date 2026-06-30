@@ -108,6 +108,22 @@ services:
     networks:
       - shopping_network
 
+  # Nginx API Gateway
+  gateway:
+    build:
+      context: ./packages/shopping-gateway
+      dockerfile: Dockerfile
+    container_name: shopping_gateway
+    ports:
+      - "8000:80"
+    depends_on:
+      - frontend
+      - product-service
+      - order-service
+      - auth-service
+    networks:
+      - shopping_network
+
 volumes:
   mongo_data:
   redis_data:

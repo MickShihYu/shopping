@@ -6,8 +6,9 @@ This repository is a Lerna-based monorepo containing a multi-service online shop
 
 ## 1. Project Structure & Architecture
 
-The application is split into four main packages under the `packages/` directory:
+The application is split into five main packages under the `packages/` directory:
 
+- **[shopping-gateway](packages/shopping-gateway)**: Nginx API Gateway handling rate limiting, connection limits, and request routing to microservices.
 - **[shopping-frontend](packages/shopping-frontend)**: A React-based Single Page Application built with TypeScript and Vite. It is served using an Nginx container in production/Docker modes.
 - **[shopping-auth](packages/shopping-auth)**: User authentication, JWT issuance, and Role-Based Access Control service.
 - **[shopping-product](packages/shopping-product)**: Product catalog and inventory management service.
@@ -32,7 +33,8 @@ docker compose up --build -d
 
 Once started, the services are available at:
 
-- **Frontend URL**: `http://localhost:8080` (React SPA served by Nginx, which also reverse proxies `/users`, `/products`, `/orders`, etc., to the backend microservices)
+- **API Gateway URL**: `http://localhost:8000` (Main entry point for frontend and `/api/*` backend routes)
+- **Frontend URL (Direct)**: `http://localhost:8080` (React SPA served by Nginx)
 - **Product API (Direct)**: `http://localhost:3001`
 - **Order API (Direct)**: `http://localhost:3002`
 - **Auth API (Direct)**: `http://localhost:3003`
