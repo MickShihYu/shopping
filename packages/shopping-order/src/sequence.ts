@@ -58,7 +58,8 @@ export class ShoppySequence implements SequenceHandler {
       try {
         authUser = await this.authenticateRequest(request, response);
       } catch (ex) {
-        const errMsg = ex?.message?.message ?? ex?.message;
+        const rawMsg = ex?.message?.message ?? ex?.message;
+        const errMsg = typeof rawMsg === 'string' ? rawMsg : (rawMsg ? String(rawMsg) : '');
 
         // Match the exact messages expected by the acceptance tests
         if (errMsg === 'Bearer realm="Users"') {

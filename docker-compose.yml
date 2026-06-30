@@ -25,9 +25,7 @@ services:
 
   # Product Service (Port 3001)
   product-service:
-    build:
-      context: .
-      dockerfile: Dockerfile.monorepo
+    image: shopping-backend
     container_name: product_service
     ports:
       - "3001:3001"
@@ -35,11 +33,11 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=3001
-      - MONGODB_URL=mongodb://mongodb:27017/shopping
+      - MONGODB_URL=mongodb://mongodb:27017/product_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - ALLOWED_ORIGINS=http://localhost,http://localhost:8080,http://localhost:5173
-    command: npm run start:shopping-product
+    command: sh -c "node ./packages/shopping-product/dist/migrate && npm run start:shopping-product"
     depends_on:
       - mongodb
       - redis
@@ -48,9 +46,7 @@ services:
 
   # Order Service (Port 3002)
   order-service:
-    build:
-      context: .
-      dockerfile: Dockerfile.monorepo
+    image: shopping-backend
     container_name: order_service
     ports:
       - "3002:3002"
@@ -58,13 +54,13 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=3002
-      - MONGODB_URL=mongodb://mongodb:27017/shopping
+      - MONGODB_URL=mongodb://mongodb:27017/order_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - PRODUCT_SERVICE_URL=http://product-service:3001
       - AUTH_SERVICE_URL=http://auth-service:3003
       - ALLOWED_ORIGINS=http://localhost,http://localhost:8080,http://localhost:5173
-    command: npm run start:shopping-order
+    command: sh -c "node ./packages/shopping-order/dist/migrate && npm run start:shopping-order"
     depends_on:
       - mongodb
       - redis
@@ -75,6 +71,7 @@ services:
 
   # Auth Service (Port 3003)
   auth-service:
+    image: shopping-backend
     build:
       context: .
       dockerfile: Dockerfile.monorepo
@@ -85,11 +82,11 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=3003
-      - MONGODB_URL=mongodb://mongodb:27017/shopping
+      - MONGODB_URL=mongodb://mongodb:27017/auth_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - ALLOWED_ORIGINS=http://localhost,http://localhost:8080,http://localhost:5173
-    command: npm run start:shopping-auth
+    command: sh -c "node ./packages/shopping-auth/dist/migrate && npm run start:shopping-auth"
     depends_on:
       - mongodb
       - redis

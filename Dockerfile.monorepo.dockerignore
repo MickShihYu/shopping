@@ -8,3 +8,5 @@ dist
 packages/*/node_modules
 packages/*/dist
 packages/*/lib
+*.tsbuildinfo
+packages/*/*.tsbuildinfo

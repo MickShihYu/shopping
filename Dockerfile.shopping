@@ -1,4 +1,4 @@
-ARG version=1.1.0
+ARG version=1.1.1
 FROM loopback4-example-shopping-monorepo:${version} AS builder
 
 # Stage 2: create the shopping image
@@ -12,10 +12,11 @@ RUN mkdir -p /home/node/app
 
 WORKDIR /home/node/app
 
-# Bundle app source code
-COPY --from=builder --chown=node /home/node/app/packages/shopping .
+# The package name in packages directory to bundle
+ARG package=shopping-product
 
-# RUN npm run build
+# Bundle app source code
+COPY --from=builder --chown=node /home/node/app/packages/${package} .
 
 # Bind to all network interfaces so that it can be mapped to the host OS
 ENV HOST=0.0.0.0 PORT=3000

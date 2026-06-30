@@ -65,12 +65,16 @@ export class AdminOrderController {
       }
     }
     if (startDate || endDate) {
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-      if (end) {
-        end.setHours(23, 59, 59, 999);
+      const dateFilter: any = {};
+      if (startDate) {
+        dateFilter.gte = new Date(startDate);
       }
-      filterWhere.date = {gte: start, lte: end};
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        dateFilter.lte = end;
+      }
+      filterWhere.date = dateFilter;
     }
 
     const orders = await this.orderRepository.find({where: filterWhere});

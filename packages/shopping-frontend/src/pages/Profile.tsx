@@ -67,7 +67,7 @@ export const Profile: React.FC = () => {
       try {
         const data = await api.getOrders();
         // Filter orders for this user if not admin/support
-        const userOrders = data.filter(order => order.userId === id);
+        const userOrders = (data || []).filter(order => order.userId === id);
         setOrders(userOrders);
       } catch (err) {
         console.error('Failed to load orders:', err);
@@ -313,7 +313,7 @@ export const Profile: React.FC = () => {
                     </div>
                     <div className="order-id-txt" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                       ID: {order.orderId}
-                      {order.userName && ` | Customer: ${order.userName}`}
+                      {order.fullName && ` | Customer: ${order.fullName}`}
                       {order.email && ` | Email: ${order.email}`}
                       {order.phone && ` | Phone: ${order.phone}`}
                     </div>

@@ -19,7 +19,7 @@ The application is split into four main packages under the `packages/` directory
 
 ### Prerequisites
 
-- Node.js >= 20.0.0
+- Node.js 18.x
 - Docker and Docker Compose
 
 ### Option A: Complete Docker Compose Startup (Recommended)
@@ -28,9 +28,6 @@ This starts all services in background containers, simulating the production mic
 
 ```bash
 docker compose up --build -d
-
-docker compose build
-docker compose up
 ```
 
 Once started, the services are available at:
@@ -55,6 +52,15 @@ Once started, the services are available at:
    npm start
    ```
    *This uses `concurrently` to start the frontend Vite dev server at `http://localhost:5173/`, and the three backend services at `http://localhost:3001/`, `http://localhost:3002/`, and `http://localhost:3003/`.*
+
+### Database Initialization
+
+If you are running the project for the first time or need to reset the database schemas, you can run the migration script from the monorepo root:
+
+```bash
+npm run migrate
+```
+*This command will execute the LoopBack 4 migration scripts for the Product and Order services, initializing the MongoDB collections and schemas.*
 
 ---
 
@@ -151,3 +157,20 @@ Pre-seeded test credentials available for testing:
 
 - **Decision**: The backend monorepo builder (`Dockerfile.monorepo`) filters out `shopping-frontend` compilation (`--ignore shopping-frontend`).
 - **Trade-off**: Resolves native compilation issues with Vite/Rolldown under Alpine Linux and minimizes container image sizes. The downside is the need to maintain multiple Dockerfiles and build pipelines.
+
+---
+
+## 8. Testing
+
+The monorepo includes various tests (Unit, Integration, and UI) across different packages.
+
+To run all tests across all packages, execute the following from the root directory:
+```bash
+npm test
+```
+*This uses Lerna to run `npm test` within each package and streams the output.*
+
+If you want to run tests for a specific backend service, you can use:
+- `npm run test_auth`
+- `npm run test_product`
+- `npm run test_order`

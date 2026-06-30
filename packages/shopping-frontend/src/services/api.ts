@@ -51,7 +51,7 @@ export interface OrderItem {
 export interface Order {
   orderId: string;
   userId: string;
-  userName: string;
+  fullName: string;
   date: string;
   products: OrderItem[];
   total: number;
@@ -379,6 +379,7 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify(body),
     });
+    if (res.status === 204) return [];
     return handleResponse(res);
   },
 

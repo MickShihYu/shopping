@@ -1,5 +1,5 @@
 # Stage 1: build the monorepo
-# Use the full image so that binary modules can be built
+# Use Node 20 as the base image
 FROM node:20
 
 # Set to a non-root built-in user `node`
@@ -10,8 +10,20 @@ RUN mkdir -p /home/node/app
 
 WORKDIR /home/node/app
 
-# Bundle app source code
+# Copy configuration and package manifests first to leverage Docker layer caching
+COPY --chown=node package.json package-lock.json lerna.json .npmrc ./
+COPY --chown=node packages/shopping-auth/package.json packages/shopping-auth/package-lock.json* ./packages/shopping-auth/
+COPY --chown=node packages/shopping-order/package.json packages/shopping-order/package-lock.json* ./packages/shopping-order/
+COPY --chown=node packages/shopping-product/package.json packages/shopping-product/package-lock.json* ./packages/shopping-product/
+
+# Install dependencies and bootstrap the monorepo packages
+RUN --mount=type=cache,uid=1000,gid=1000,target=/home/node/.npm \
+    HUSKY_SKIP_INSTALL=1 npm ci --ignore-scripts --legacy-peer-deps && \
+    ./node_modules/.bin/lerna bootstrap --ignore shopping-frontend -- --legacy-peer-deps
+
+# Bundle the rest of the app source code
 COPY --chown=node . ./
-RUN HUSKY_SKIP_INSTALL=1 npm ci --ignore-scripts && \
-    npx lerna bootstrap --ignore shopping-frontend && \
-    npx lerna run build --ignore shopping-frontend
+
+# Build the packages
+RUN ./node_modules/.bin/lerna run build --ignore shopping-frontend
+
