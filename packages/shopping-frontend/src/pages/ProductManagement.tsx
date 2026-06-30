@@ -120,7 +120,6 @@ export const ProductManagement: React.FC = () => {
 
   useEffect(() => {
     let isActive = true;
-
     if (isAdmin && activeTab === 'orders') {
       fetchDashboardData();
       const timer = setTimeout(() => {

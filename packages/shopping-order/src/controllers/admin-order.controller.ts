@@ -2,15 +2,16 @@
 // Node module: loopback4-example-shopping
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
-
-import {authenticate, STRATEGY} from 'loopback4-authentication';
-import {authorize} from 'loopback4-authorization';
-import {PermissionKey} from '../permission-keys';
-import {repository} from '@loopback/repository';
-import {get, post, patch, HttpErrors, param, requestBody} from '@loopback/rest';
-import {Order} from '../models';
-import {OrderRepository} from '../repositories';
-import {OPERATION_SECURITY_SPEC} from '../utils';
+import moment from 'moment';
+import 'moment-timezone';
+import { authenticate, STRATEGY } from 'loopback4-authentication';
+import { authorize } from 'loopback4-authorization';
+import { PermissionKey } from '../permission-keys';
+import { repository } from '@loopback/repository';
+import { get, post, patch, HttpErrors, param, requestBody } from '@loopback/rest';
+import { Order } from '../models';
+import { OrderRepository } from '../repositories';
+import { OPERATION_SECURITY_SPEC } from '../utils';
 
 const PRODUCT_SERVICE_URL =
   process.env.PRODUCT_SERVICE_URL || 'http://127.0.0.1:3001';
@@ -24,13 +25,13 @@ export class AdminOrderController {
   constructor(
     @repository(OrderRepository)
     public orderRepository: OrderRepository,
-  ) {}
+  ) { }
 
   /**
    * Search all orders with optional filters for admins
    */
   @authenticate(STRATEGY.BEARER)
-  @authorize({permissions: [PermissionKey.AdministratorAccess]})
+  @authorize({ permissions: [PermissionKey.AdministratorAccess] })
   @post('/admin/orders', {
     security: OPERATION_SECURITY_SPEC,
     responses: {
@@ -38,7 +39,7 @@ export class AdminOrderController {
         description: 'Array of Order model instances',
         content: {
           'application/json': {
-            schema: {type: 'array', items: {'x-ts-type': Order}},
+            schema: { type: 'array', items: { 'x-ts-type': Order } },
           },
         },
       },
@@ -47,7 +48,7 @@ export class AdminOrderController {
   async findAdminOrders(
     @requestBody() searchParameters: any,
   ): Promise<Order[]> {
-    const {status, email, startDate, endDate} = searchParameters;
+    const { status, email, startDate, endDate } = searchParameters;
     const filterWhere: any = {};
 
     if (status) {
@@ -57,35 +58,65 @@ export class AdminOrderController {
       const isObjectId = /^[0-9a-fA-F]{24}$/.test(email);
       if (isObjectId) {
         filterWhere.or = [
-          {email: {regexp: new RegExp(email, 'i')}},
-          {orderId: email},
+          { email: { regexp: new RegExp(email, 'i') } },
+          { orderId: email },
         ];
       } else {
-        filterWhere.email = {regexp: new RegExp(email, 'i')};
+        filterWhere.email = { regexp: new RegExp(email, 'i') };
       }
     }
     if (startDate || endDate) {
-      const dateFilter: any = {};
-      if (startDate) {
-        dateFilter.gte = new Date(startDate);
+      if (startDate && endDate) {
+        filterWhere.date = {
+          between: [
+            this.getStartDateTimezone(startDate),
+            this.getEndDateTimezone(endDate)
+          ]
+        };
+      } else if (startDate) {
+        filterWhere.date = { gte: this.getStartDateTimezone(startDate) };
+      } else if (endDate) {
+        filterWhere.date = { lte: this.getEndDateTimezone(endDate) };
       }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        dateFilter.lte = end;
-      }
-      filterWhere.date = dateFilter;
     }
 
-    const orders = await this.orderRepository.find({where: filterWhere});
+    const orders = await this.orderRepository.find({ where: filterWhere });
     return orders;
+  }
+
+  getStartDateTimezone(date: string, timezone: string = 'Asia/Taipei') {
+    let m: any;
+    if (/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date)) {
+      m = moment.tz(`${date} 00:00:00`, timezone);
+    } else if (/^([0-9]{4}-[0-9]{2}-[0-9]{2})\s([0-9]{2}:[0-9]{2}:[0-9]{2})$/.test(date)) {
+      m = moment.tz(date, timezone);
+    }
+
+    if (!m.isValid()) {
+      throw new HttpErrors.UnprocessableEntity('Invalid date format');
+    }
+
+    return m.toDate();
+  }
+
+  getEndDateTimezone(date: string, timezone: string = 'Asia/Taipei') {
+    let m: any;
+    if (/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date)) {
+      m = moment.tz(`${date} 23:59:59`, timezone);
+    } else if (/^([0-9]{4}-[0-9]{2}-[0-9]{2})\s([0-9]{2}:[0-9]{2}:[0-9]{2})$/.test(date)) {
+      m = moment.tz(date, timezone);
+    }
+    if (!m.isValid()) {
+      throw new HttpErrors.UnprocessableEntity('Invalid date format');
+    }
+    return m.toDate();
   }
 
   /**
    * State Machine transition endpoint for order status
    */
   @authenticate(STRATEGY.BEARER)
-  @authorize({permissions: [PermissionKey.AdministratorAccess]})
+  @authorize({ permissions: [PermissionKey.AdministratorAccess] })
   @patch('/admin/orders/{id}/status', {
     security: OPERATION_SECURITY_SPEC,
     responses: {
@@ -102,14 +133,14 @@ export class AdminOrderController {
           schema: {
             type: 'object',
             properties: {
-              status: {type: 'string'},
+              status: { type: 'string' },
             },
             required: ['status'],
           },
         },
       },
     })
-    statusUpdate: {status: string},
+    statusUpdate: { status: string },
   ): Promise<void> {
     const order = await this.orderRepository.findById(id);
     if (!order) {
@@ -136,7 +167,7 @@ export class AdminOrderController {
     }
 
     // Apply state change
-    await this.orderRepository.updateById(id, {status: targetStatus});
+    await this.orderRepository.updateById(id, { status: targetStatus });
 
     // Release stock if cancelled by admin
     if (targetStatus === 'CANCELLED') {
@@ -146,8 +177,8 @@ export class AdminOrderController {
             `${PRODUCT_SERVICE_URL}/products/${item.productId}/increase-stock`,
             {
               method: 'POST',
-              headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({quantity: item.quantity}),
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ quantity: item.quantity }),
             },
           );
         }
@@ -159,7 +190,7 @@ export class AdminOrderController {
    * Get dashboard statistics for orders
    */
   @authenticate(STRATEGY.BEARER)
-  @authorize({permissions: [PermissionKey.AdministratorAccess]})
+  @authorize({ permissions: [PermissionKey.AdministratorAccess] })
   @get('/admin/orders/dashboard', {
     security: OPERATION_SECURITY_SPEC,
     responses: {
@@ -170,14 +201,14 @@ export class AdminOrderController {
             schema: {
               type: 'object',
               properties: {
-                todayOrdersCount: {type: 'number'},
-                todayRevenue: {type: 'number'},
+                todayOrdersCount: { type: 'number' },
+                todayRevenue: { type: 'number' },
                 ordersByStatus: {
                   type: 'object',
                   properties: {
-                    PENDING: {type: 'number'},
-                    PROCESSING: {type: 'number'},
-                    SHIPPED: {type: 'number'},
+                    PENDING: { type: 'number' },
+                    PROCESSING: { type: 'number' },
+                    SHIPPED: { type: 'number' },
                   },
                 },
               },
@@ -231,7 +262,7 @@ export class AdminOrderController {
    * Get single order details for admins
    */
   @authenticate(STRATEGY.BEARER)
-  @authorize({permissions: [PermissionKey.AdministratorAccess]})
+  @authorize({ permissions: [PermissionKey.AdministratorAccess] })
   @get('/admin/orders/{id}', {
     security: OPERATION_SECURITY_SPEC,
     responses: {
@@ -242,13 +273,13 @@ export class AdminOrderController {
             schema: {
               type: 'object',
               properties: {
-                order: {'x-ts-type': Order},
+                order: { 'x-ts-type': Order },
                 customer: {
                   type: 'object',
                   properties: {
-                    firstName: {type: 'string'},
-                    lastName: {type: 'string'},
-                    email: {type: 'string'},
+                    firstName: { type: 'string' },
+                    lastName: { type: 'string' },
+                    email: { type: 'string' },
                   },
                 },
               },
@@ -289,7 +320,7 @@ export class AdminOrderController {
    * Check if any orders contain the given productId
    */
   @authenticate(STRATEGY.BEARER)
-  @authorize({permissions: [PermissionKey.AdministratorAccess]})
+  @authorize({ permissions: [PermissionKey.AdministratorAccess] })
   @get('/admin/orders/check-product/{productId}', {
     security: OPERATION_SECURITY_SPEC,
     responses: {
@@ -300,8 +331,8 @@ export class AdminOrderController {
             schema: {
               type: 'object',
               properties: {
-                hasOrders: {type: 'boolean'},
-                count: {type: 'number'},
+                hasOrders: { type: 'boolean' },
+                count: { type: 'number' },
               },
             },
           },
@@ -311,13 +342,13 @@ export class AdminOrderController {
   })
   async checkProductHasOrders(
     @param.path.string('productId') productId: string,
-  ): Promise<{hasOrders: boolean; count: number}> {
+  ): Promise<{ hasOrders: boolean; count: number }> {
     const allOrders = await this.orderRepository.find({
-      where: {status: {neq: 'CANCELLED'}},
+      where: { status: { neq: 'CANCELLED' } },
     });
     const matching = allOrders.filter(order =>
       order.products?.some(p => p.productId === productId),
     );
-    return {hasOrders: matching.length > 0, count: matching.length};
+    return { hasOrders: matching.length > 0, count: matching.length };
   }
 }
