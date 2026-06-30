@@ -86,6 +86,7 @@ The following core environment variables can be customized in your environment c
 | `ALLOWED_ORIGINS` | `http://localhost...` | Allowed CORS origins (comma-separated). |
 | `VITE_API_URL` | `http://localhost:3000` | Frontend build-time variable pointing to the API gateway. |
 | `PRODUCT_SERVICE_URL`| `http://127.0.0.1:3001` | URL of the product service (used internally). |
+| `ORDER_SERVICE_URL` | `http://127.0.0.1:3002` | URL of the order service (used internally). |
 | `AUTH_SERVICE_URL` | `http://127.0.0.1:3003` | URL of the auth service (used internally). |
 
 ### Authentication & Security
