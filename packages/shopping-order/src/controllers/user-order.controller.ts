@@ -33,6 +33,7 @@ import {
 import { Order } from '../models';
 import { OrderRepository } from '../repositories';
 import { OPERATION_SECURITY_SPEC } from '../utils';
+import { v4 as uuidv4 } from 'uuid';
 
 const PRODUCT_SERVICE_URL =
   process.env.PRODUCT_SERVICE_URL || 'http://localhost:3001';
@@ -85,6 +86,9 @@ export class UserOrderController {
     let calculatedTotal = 0;
     const productsToPurchase = [];
     const successfullyDeducted: { productId: string; quantity: number }[] = [];
+
+    // Generate a transaction ID for stock rollback to ensure idempotency
+    const rollbackTransactionId = uuidv4();
 
     try {
       for (const item of order.products) {
@@ -147,7 +151,7 @@ export class UserOrderController {
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quantity: item.quantity }),
+            body: JSON.stringify({ quantity: item.quantity, transactionId: rollbackTransactionId }),
           },
         );
       }
@@ -167,7 +171,7 @@ export class UserOrderController {
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quantity: item.quantity }),
+            body: JSON.stringify({ quantity: item.quantity, transactionId: rollbackTransactionId }),
           },
         );
       }
@@ -242,23 +246,27 @@ export class UserOrderController {
       throw new HttpErrors.BadRequest('Only pending orders can be cancelled');
     }
 
-    // Change status to CANCELLED
-    order.status = 'CANCELLED';
-    await this.orderRepo.updateById(orderId, { status: 'CANCELLED' });
-
-    // Release stock
+    // Release stock FIRST to prevent DB inconsistencies where order is cancelled but stock release fails
+    // If stock release fails, order remains PENDING, allowing the client to safely retry.
     if (order.products) {
       for (const item of order.products) {
-        await fetch(
+        const res = await fetch(
           `${PRODUCT_SERVICE_URL}/products/${item.productId}/increase-stock`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quantity: item.quantity }),
+            body: JSON.stringify({ quantity: item.quantity, transactionId: orderId }),
           },
         );
+        if (!res.ok) {
+          throw new HttpErrors.InternalServerError(`Failed to release stock for product ${item.productId}. Cancellation aborted.`);
+        }
       }
     }
+
+    // Change status to CANCELLED after successfully releasing stock
+    order.status = 'CANCELLED';
+    await this.orderRepo.updateById(orderId, { status: 'CANCELLED' });
   }
 
   @authenticate(STRATEGY.BEARER)

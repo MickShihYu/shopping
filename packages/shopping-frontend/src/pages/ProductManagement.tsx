@@ -85,29 +85,8 @@ export const ProductManagement: React.FC = () => {
 
   const [dashboardData, setDashboardData] = useState<any>(null);
 
-  const fetchAdminOrders = async (overrideStatus?: string) => {
-    setOrdersLoading(true);
-    const statusQuery = overrideStatus !== undefined ? overrideStatus : orderStatusFilter;
-    try {
-      const data = await api.getAdminOrders(
-        statusQuery || undefined,
-        orderEmailFilter || undefined,
-        orderStartDateFilter || undefined,
-        orderEndDateFilter || undefined
-      );
-      const newOrders = data || [];
-      setOrders(newOrders);
-
-      // Safety pagination check: if current page exceeds new items total, reset to page 1
-      if ((orderCurrentPage - 1) * ordersPerPage >= newOrders.length) {
-        setOrderCurrentPage(1);
-      }
-    } catch (err) {
-      console.error('Failed to load admin orders:', err);
-    } finally {
-      setOrdersLoading(false);
-    }
-  };
+  // Removed fetchAdminOrders to use unified useEffect
+  const [orderRefreshTick] = useState(0);
 
   const fetchDashboardData = async () => {
     try {
@@ -122,33 +101,37 @@ export const ProductManagement: React.FC = () => {
     let isActive = true;
     if (isAdmin && activeTab === 'orders') {
       fetchDashboardData();
-      const timer = setTimeout(() => {
-        setOrdersLoading(true);
-        api.getAdminOrders(
-          orderStatusFilter || undefined,
-          orderEmailFilter || undefined,
-          orderStartDateFilter || undefined,
-          orderEndDateFilter || undefined
-        )
-          .then((data) => {
-            if (isActive) {
-              setOrders(data || []);
-              setOrderCurrentPage(1);
-            }
-          })
-          .catch((err) => {
-            if (isActive) console.error('Failed to load admin orders:', err);
-          })
-          .finally(() => {
-            if (isActive) setOrdersLoading(false);
-          });
-      }, 300);
+
+      setOrdersLoading(true);
+      api.getAdminOrders(
+        orderStatusFilter || undefined,
+        orderEmailFilter || undefined,
+        orderStartDateFilter || undefined,
+        orderEndDateFilter || undefined
+      )
+        .then((data) => {
+          if (isActive) {
+            const newOrders = data || [];
+            setOrders(newOrders);
+            // Only reset to page 1 if current page is out of bounds
+            setOrderCurrentPage(prev => {
+              if ((prev - 1) * ordersPerPage >= newOrders.length) return 1;
+              return prev;
+            });
+          }
+        })
+        .catch((err) => {
+          if (isActive) console.error('Failed to load admin orders:', err);
+        })
+        .finally(() => {
+          if (isActive) setOrdersLoading(false);
+        });
+
       return () => {
         isActive = false;
-        clearTimeout(timer);
       };
     }
-  }, [isAdmin, activeTab, orderStatusFilter, orderEmailFilter, orderStartDateFilter, orderEndDateFilter]);
+  }, [isAdmin, activeTab, orderStatusFilter, orderEmailFilter, orderStartDateFilter, orderEndDateFilter, orderRefreshTick]);
 
   const handleDelete = async (productId: string) => {
     try {
@@ -507,11 +490,21 @@ export const ProductManagement: React.FC = () => {
                           if (!ok) return;
                           try {
                             await api.updateAdminOrderStatus(order.orderId, targetStatus);
-                            setTimeout(() => {
-                              setOrderCurrentPage(1);
-                              fetchAdminOrders();
-                              fetchDashboardData();
-                            }, 200);
+
+                            // 樂觀更新 (Optimistic Update) / Computed 概念處理
+                            setOrders(prev => {
+                              const updated = prev.map(o =>
+                                o.orderId === order.orderId ? { ...o, status: targetStatus } : o
+                              );
+                              // 如果目前有依狀態過濾，且新狀態不符合過濾條件，則將其從列表中移除
+                              if (orderStatusFilter && orderStatusFilter !== targetStatus) {
+                                return updated.filter(o => o.orderId !== order.orderId);
+                              }
+                              return updated;
+                            });
+
+                            // 刷新 Dashboard 統計數據
+                            fetchDashboardData();
                           } catch (err: any) {
                             alert(err.message || 'Failed to update order status');
                           }

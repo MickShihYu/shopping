@@ -59,8 +59,13 @@ export async function retry<T>(
     const status = await task.run();
     if (status.done) return status.value!;
     if (--triesLeft > 0) {
-      debug('Wait for %d ms', interval);
-      await sleep(interval);
+      // Exponential backoff with jitter
+      const attempt = maxTries - triesLeft;
+      const backoff = Math.min(interval * Math.pow(1.5, attempt - 1), 500); // Max 500ms
+      const jitter = Math.floor(Math.random() * backoff * 0.5);
+      const waitTime = Math.floor(backoff + jitter);
+      debug('Wait for %d ms', waitTime);
+      await sleep(waitTime);
     } else {
       // No more retries, timeout
       const msg = `Failed to ${task.description} after ${

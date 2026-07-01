@@ -409,15 +409,16 @@ export class ProductController {
             type: 'object',
             properties: {
               quantity: {type: 'number'},
+              transactionId: {type: 'string'},
             },
             required: ['quantity'],
           },
         },
       },
     })
-    body: {quantity: number},
+    body: {quantity: number; transactionId?: string},
   ): Promise<{success: boolean}> {
-    await this.productRepository.increaseStock(id, body.quantity);
+    await this.productRepository.increaseStock(id, body.quantity, body.transactionId);
     return {success: true};
   }
 }
